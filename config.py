@@ -1,5 +1,6 @@
 # 目标网站的URL
 TARGET_URL = 'https://www.mfa.gov.cn/web/wjbz_673089/zyjh_673099/'
+TARGET_URL_2 = 'https://www.mfa.gov.cn/web/ziliao_674904/zyjh_674906/'
 
 # 请求头
 HEADERS = {

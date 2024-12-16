@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 
 from bs4 import BeautifulSoup
 
@@ -28,34 +29,55 @@ def get_hrefs_titles(html):
     return anchors
 
 
-def get_date(text):
-    # 使用正则表达式匹配括号内的时间信息
-    pattern = r'(\d{4}-\d{2}-\d{2})'  # 匹配 yyyy-mm-dd 格式的时间
-    matches = re.findall(pattern, text)
+def get_date(html):
+    # 使用BeautifulSoup解析HTML
+    soup = BeautifulSoup(html, 'html.parser')
 
-    # 获取最后匹配的时间（如果只有一个匹配，matches[-1] 也适用）
-    if matches:
-        date = matches[-1]  # 获取最后一个匹配项
-    else:
-        date = "时间信息匹配失败"
+    # 找到class为"time"的<p>标签，然后找到其内部的<span>标签
+    time_p = soup.find('p', class_='time')
+    # 在<p>标签内找到所有的<span>标签
+    spans = time_p.find_all('span')
 
-    return date
+    # 定义时间格式的正则表达式
+    time_pattern = re.compile(r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}')
+    time_info = "9999-12-31 23:59"
+    for span in spans:
+        # 检查<span>标签的文本内容是否匹配时间格式
+        if time_pattern.match(span.text.strip()):
+            # 提取时间信息
+            time_info = span.text.strip()
+            break
+    # 提取<span>标签中的文本，即时间信息
+    # time_info = time_span.text
+
+    # 将时间字符串转换为datetime对象（可选，但有助于后续处理）
+    time_obj = datetime.strptime(time_info, '%Y-%m-%d %H:%M')
+    # 仅保留年月日部分，并格式化为字符串
+    date_only = time_obj.strftime('%Y-%m-%d')
+
+    return date_only
 
 
 def get_words(html, keywords):
-    # 提取所有<p>标签的内容
-    paragraphs = re.findall(r'<p>(.*?)</p>', html, re.DOTALL)
+    # 使用BeautifulSoup解析HTML
+    soup = BeautifulSoup(html, 'html.parser')
+    # 找到所有的<p>标签
+    paragraphs = soup.find_all('p')
 
     # 存储包含关键词的句子
     words_with_keywords = []
 
-    match = True
+    # 若 match = False，则只搜索提及“联合国”的文章
+    match = False
+    # 若 match = True，则搜索所有文章
+    # match = True
     # 遍历每个段落，检查是否包含关键词
     for paragraph in paragraphs:
-        match = match or is_un_info(paragraph)
+        paragraph_text = paragraph.get_text()
+        match = match or is_un_info(paragraph_text)
 
         # 去除段落中的HTML标签
-        clean_paragraph = re.sub(r'<.*?>', '', paragraph)
+        clean_paragraph = re.sub(r'<.*?>', '', paragraph_text)
 
         # 分割成句子（这里简单地使用句号、问号、感叹号作为句子的分隔符）
         sentences = re.split(r'[。！？]', clean_paragraph)
@@ -69,8 +91,8 @@ def get_words(html, keywords):
                 words_with_keywords.append(sentence)
 
     if match:
-        print("包含'联合国'")
+        # print("包含'联合国'")
         return words_with_keywords
     else:
-        print("无关")
+        # print("无关")
         return []
